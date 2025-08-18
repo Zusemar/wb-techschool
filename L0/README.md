@@ -6,7 +6,7 @@
 
 1. Склонируйте репозиторий и перейдите в папку L0:
    ```sh
-   git clone <repo_url>
+   git clone https://github.com/Zusemar/wb-techschool.git
    cd wb-techschool/L0
    ```
 2. Настройте переменные окружения (см. .env_sample, можно переопределять через make).
