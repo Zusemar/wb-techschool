@@ -8,12 +8,14 @@ import (
 )
 
 type OrderCache struct {
-	mu    sync.RWMutex
-	store map[string]domain.Order
+	mu         sync.RWMutex
+	store      map[string]domain.Order
+	orderQueue []string // FIFO очередь для отслеживания порядка
+	maxSize    int      // максимальный размер кэша
 }
 
 func NewOrderCache() *OrderCache {
-	return &OrderCache{store: make(map[string]domain.Order)}
+	return &OrderCache{store: make(map[string]domain.Order), orderQueue: make([]string, 0, 1000), maxSize: 1000}
 }
 
 func (c *OrderCache) Get(orderUID string) (domain.Order, bool) {
@@ -26,6 +28,14 @@ func (c *OrderCache) Get(orderUID string) (domain.Order, bool) {
 func (c *OrderCache) Set(o domain.Order) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if _, exists := c.store[o.Order_uid]; !exists {
+		c.orderQueue = append(c.orderQueue, o.Order_uid)
+		if len(c.orderQueue) > c.maxSize {
+			oldest := c.orderQueue[0]
+			c.orderQueue = c.orderQueue[1:]
+			delete(c.store, oldest)
+		}
+	}
 	c.store[o.Order_uid] = o
 }
 

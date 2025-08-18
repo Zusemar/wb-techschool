@@ -21,9 +21,15 @@ type Config struct {
 }
 
 type Consumer struct {
-	reader *kafka.Reader
+	reader Reader
 	repo   usecases.OrderRepository
 	cache  *usecases.OrderCache
+}
+
+// Reader is a minimal interface of kafka-go reader for testability
+type Reader interface {
+	ReadMessage(ctx context.Context) (kafka.Message, error)
+	Close() error
 }
 
 func NewConsumer(cfg Config, repo usecases.OrderRepository, cache *usecases.OrderCache) *Consumer {
@@ -37,11 +43,16 @@ func NewConsumer(cfg Config, repo usecases.OrderRepository, cache *usecases.Orde
 	return &Consumer{reader: r, repo: repo, cache: cache}
 }
 
+// NewConsumerWithReader allows injecting a mock reader in tests
+func NewConsumerWithReader(r Reader, repo usecases.OrderRepository, cache *usecases.OrderCache) *Consumer {
+	return &Consumer{reader: r, repo: repo, cache: cache}
+}
+
 func (c *Consumer) Close() error { return c.reader.Close() }
 
 func (c *Consumer) Run(ctx context.Context) error {
 	for {
-		m, err := c.reader.ReadMessage(ctx)
+		message, err := c.reader.ReadMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return ctx.Err()
@@ -51,17 +62,16 @@ func (c *Consumer) Run(ctx context.Context) error {
 			continue
 		}
 
-		var o domain.Order
-		if err := json.Unmarshal(m.Value, &o); err != nil {
+		var order domain.Order
+		if err := json.Unmarshal(message.Value, &order); err != nil {
 			log.Printf("invalid message: %v", err)
 			continue
 		}
 
-		// Persist then cache
-		if err := c.repo.CreateOrder(ctx, &o); err != nil {
+		if err := c.repo.CreateOrder(ctx, &order); err != nil {
 			log.Printf("db error: %v", err)
 			continue
 		}
-		c.cache.Set(o)
+		c.cache.Set(order)
 	}
 }
