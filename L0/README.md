@@ -10,7 +10,17 @@
    cd wb-techschool/L0
    ```
 2. Настройте переменные окружения (см. .env_sample, можно переопределять через make).
-3. Запустите все сервисы и приложение одной командой:
+3. 
+   # 1) Поднять инфраструктуру (Postgres, ZooKeeper, Kafka, Kafka UI)
+docker compose -f ./docker-compose.yaml up -d postgres zookeeper kafka kafka-ui
+
+   # 2) Прогнать миграции
+docker compose -f ./docker-compose.yaml --profile migrate up migrate --exit-code-from migrate
+
+   # 4) Запустить приложение
+go run ./cmd
+
+3.1 Запустите все сервисы и приложение одной командой:
    ```sh
    make dev
    ```
