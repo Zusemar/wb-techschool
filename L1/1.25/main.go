@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"time"
 )
 
@@ -22,4 +23,6 @@ func sleep(duration time.Duration) {
 func main() {
 	sleep(5 * time.Second)
 	fmt.Println("ive waited for 5 seconds")
+
+	fmt.Println(runtime.GOMAXPROCS(0))
 }
