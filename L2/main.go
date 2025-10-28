@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
-	"os"
 )
 
-func Foo() error {
-	var err *os.PathError = nil
-	return err
+func main() {
+	var s = []string{"1", "2", "3"}
+	modifySlice(s)
+	fmt.Println(s)
 }
 
-func main() {
-	err := Foo()
-	fmt.Println(err)
-	fmt.Println(err == (*os.PathError)(nil))
+func modifySlice(i []string) {
+	i[0] = "3"
+	i = append(i, "4")
+	i[1] = "5"
+	i = append(i, "6")
 }
