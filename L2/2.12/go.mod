@@ -1,3 +1,3 @@
-module example.com/m/v2
+module grep
 
 go 1.24.1

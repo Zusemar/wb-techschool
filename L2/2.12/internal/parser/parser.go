@@ -19,7 +19,7 @@ type Options struct {
 }
 
 // Parse is options machine that reads all flags for os.Args to Options struct
-// and error if something went wrong
+// and returns an error if something went wrong
 func Parse(argv []string) (Options, error) {
 	var opts Options
 	for i := 0; i < len(argv); i++ {

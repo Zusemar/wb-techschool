@@ -1,0 +1,5 @@
+info start
+warn 1
+error found
+continue
+error again

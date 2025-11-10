@@ -1,34 +1,68 @@
 package matcher
 
 import (
+	"regexp"
 	"strings"
 )
 
-// Matcher provides united interface to diff -v -i -F flags
+// Matcher decides if a given string matches the pattern.
+// provides united interface to diff -v -i -F flags
 type Matcher interface {
-	Match(str, pattern string) bool
+	Match(str string) bool
 }
 
-// fixedMatcher handles the Match with patter in -F flag situations
-type fMatcher struct {
+// matcher
+type matcher struct {
+	pattern    string
+	fixed      bool
+	ignoreCase bool
+	invert     bool
+	re         *regexp.Regexp
 }
 
-func (fm *fMatcher) Match(str, pattern string) bool {
-	return strings.EqualFold(str, pattern)
+// Match
+func (m *matcher) Match(str string) bool {
+	var matched bool
+
+	if m.fixed {
+		if m.ignoreCase {
+			matched = strings.Contains(strings.ToLower(str), strings.ToLower(m.pattern))
+		} else {
+			matched = strings.Contains(str, m.pattern)
+		}
+	} else {
+		matched = m.re.MatchString(str)
+	}
+	if m.invert {
+		matched = !matched
+	}
+
+	return matched
 }
 
-// vMatcher handles the Match with patter in -v flag situations
-type vMatcher struct {
-}
+// New is a fabric of matchers
+// TODO: if args will become too many its better to change signature
+// to New(pattern string, cfg confix) where confix contains all flags
+func New(pattern string, fixed, ignoreCase, invert bool) (Matcher, error) {
+	m := &matcher{
+		pattern:    pattern,
+		fixed:      fixed,
+		ignoreCase: ignoreCase,
+		invert:     invert,
+	}
 
-func (vm *vMatcher) Match(str, pattern string) bool {
-	return !strings.EqualFold(str, pattern)
-}
+	// если не fixed, значит это регулярка
+	if !fixed {
+		reStr := pattern
+		if ignoreCase {
+			reStr = "(?i)" + reStr
+		}
+		re, err := regexp.Compile(reStr)
+		if err != nil {
+			return nil, err
+		}
+		m.re = re
+	}
 
-// iMatcher handles the Match with patter in -i flag situations
-type iMatcher struct {
-}
-
-func (im *iMatcher) Match(str, pattern string) bool {
-	return strings.Contains(strings.ToLower(str), strings.ToLower(pattern))
+	return m, nil
 }
