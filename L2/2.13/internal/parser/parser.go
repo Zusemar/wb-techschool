@@ -19,7 +19,7 @@ type Options struct {
 func Parse(args []string) (Options, error) {
 	opts := Options{}
 	if len(args) == 0 {
-		return Options{}, fmt.Errorf("usage: cut -f LIST [-d DELIM] [-s]")
+		return Options{}, fmt.Errorf("usage: cut -f LIST [-d DELIM(optional)] [-s]")
 	}
 
 	for i := 1; i < len(args); i++ {
