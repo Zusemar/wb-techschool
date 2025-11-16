@@ -5,11 +5,12 @@ import (
 	"io"
 )
 
+// Reader просто удобынй нейминг для сканера
 type Reader struct {
 	scanner *bufio.Scanner
 }
 
-// New
+// New создает новый сканер
 func New(r io.Reader) *Reader {
 	sc := bufio.NewScanner(r)
 	buf := make([]byte, 0, 1024)
@@ -17,7 +18,7 @@ func New(r io.Reader) *Reader {
 	return &Reader{scanner: sc}
 }
 
-// Next
+// Next дает следующую строку
 func (r *Reader) Next() (string, bool, error) {
 	if r.scanner.Scan() {
 		return r.scanner.Text(), true, nil
