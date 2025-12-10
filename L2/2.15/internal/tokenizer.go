@@ -26,7 +26,7 @@ const (
 	STATE_ESCAPED
 )
 
-type tokenizer struct {
+type Tokenizer struct {
 	input     []rune
 	state     State
 	prevState State
@@ -38,15 +38,22 @@ type tokenizer struct {
 
 /* ------------------------- PUBLIC TOKENIZE ---------------------------- */
 
-func (t *tokenizer) Tokenize(str string) ([]Token, error) {
+func Tokenize(str string) ([]Token, error) {
+	t := &Tokenizer{}
+	return t.Tokenize(str)
+}
+
+func (t *Tokenizer) Tokenize(str string) ([]Token, error) {
 	t.input = []rune(str)
 	t.state = STATE_NORMAL
 	t.prevState = STATE_NORMAL
 	t.pos = 0
 	t.buf = t.buf[:0]
 	t.tokens = t.tokens[:0]
-
+	//fmt.Println(t.tokens)
 	for t.pos < len(t.input) {
+		//fmt.Println(t.state)
+		//fmt.Println(t.tokens)
 		ch := t.input[t.pos]
 
 		if t.pos+1 < len(t.input) {
@@ -84,7 +91,7 @@ func (t *tokenizer) Tokenize(str string) ([]Token, error) {
 
 /* ---------------------------- HELPERS -------------------------------- */
 
-func (t *tokenizer) flushToken() {
+func (t *Tokenizer) flushToken() {
 	if len(t.buf) == 0 {
 		return
 	}
@@ -95,7 +102,7 @@ func (t *tokenizer) flushToken() {
 	t.buf = t.buf[:0]
 }
 
-func (t *tokenizer) addToken(tt TokenType, val string) {
+func (t *Tokenizer) addToken(tt TokenType, val string) {
 	t.tokens = append(t.tokens, Token{
 		Type:  tt,
 		Value: val,
@@ -104,7 +111,7 @@ func (t *tokenizer) addToken(tt TokenType, val string) {
 
 /* ---------------------------- STATE HANDLERS -------------------------- */
 
-func (t *tokenizer) handleNormal(ch rune) {
+func (t *Tokenizer) handleNormal(ch rune) {
 	switch ch {
 
 	case ' ':
@@ -158,7 +165,7 @@ func (t *tokenizer) handleNormal(ch rune) {
 	}
 }
 
-func (t *tokenizer) handleDouble(ch rune) {
+func (t *Tokenizer) handleDouble(ch rune) {
 	switch ch {
 	case '"':
 		t.state = STATE_NORMAL
@@ -172,7 +179,7 @@ func (t *tokenizer) handleDouble(ch rune) {
 	}
 }
 
-func (t *tokenizer) handleSingle(ch rune) {
+func (t *Tokenizer) handleSingle(ch rune) {
 	switch ch {
 	case '\'':
 		t.state = STATE_NORMAL
@@ -186,7 +193,7 @@ func (t *tokenizer) handleSingle(ch rune) {
 	}
 }
 
-func (t *tokenizer) handleEscaped(ch rune) {
+func (t *Tokenizer) handleEscaped(ch rune) {
 	t.buf = append(t.buf, ch)
 	t.state = t.prevState
 }
