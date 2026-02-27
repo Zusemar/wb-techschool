@@ -94,7 +94,7 @@ func handleWget(args []string) {
 		RootDir:      targetDir,
 		MaxDepth:     depth,
 		RequestTTL:   20 * time.Second,
-		MaxPages:     0,   // без жёсткого лимита по страницам
+		MaxPages:     0,    // без жёсткого лимита по страницам
 		SameHostOnly: true, // не выходим за пределы домена
 	}
 

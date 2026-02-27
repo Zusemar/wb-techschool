@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -33,7 +34,31 @@ func (p *Processor) Process(res *fetcher.Result) ([]string, error) {
 	}
 
 	if !strings.HasPrefix(res.ContentType, "text/html") {
-		// не HTML — просто сохраняем как есть, без извлечения ссылок
+		// CSS обрабатываем отдельно: вытаскиваем url(...) и переписываем пути.
+		if strings.HasPrefix(res.ContentType, "text/css") {
+			localPath, err := p.storage.LocalPath(res.FinalURL)
+			if err != nil {
+				return nil, err
+			}
+
+			links, rewritten, err := p.rewriteCSS(res.FinalURL, localPath, res.Body)
+			if err != nil {
+				return nil, err
+			}
+
+			dir := filepath.Dir(localPath)
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				return nil, err
+			}
+
+			if err := os.WriteFile(localPath, rewritten, 0o644); err != nil {
+				return nil, err
+			}
+
+			return links, nil
+		}
+
+		// прочие типы — просто сохраняем как есть, без извлечения ссылок
 		if _, err := p.storage.Save(res.FinalURL, res.Body); err != nil {
 			return nil, err
 		}
@@ -86,7 +111,7 @@ func (p *Processor) rewriteHTML(baseURL, localPath string, body []byte) ([]strin
 			switch n.Data {
 			case "a", "link":
 				attrKey = "href"
-			case "img", "script":
+			case "img", "script", "video", "audio", "source", "iframe", "embed":
 				attrKey = "src"
 			}
 
@@ -138,5 +163,69 @@ func (p *Processor) rewriteHTML(baseURL, localPath string, body []byte) ([]strin
 	}
 
 	return links, buf.Bytes(), nil
+}
+
+// rewriteCSS:
+//   - находит url(...) внутри CSS
+//   - собирает ссылки для дальнейшей загрузки
+//   - переписывает пути на относительные к локальному файлу CSS.
+func (p *Processor) rewriteCSS(baseURL, localPath string, body []byte) ([]string, []byte, error) {
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	css := string(body)
+	// Поддерживаем url(foo), url('foo'), url("foo")
+	re := regexp.MustCompile(`url\(\s*(?:'([^']*)'|"([^"]*)"|([^'")]+))\s*\)`)
+
+	var links []string
+	result := re.ReplaceAllStringFunc(css, func(match string) string {
+		submatches := re.FindStringSubmatch(match)
+		if len(submatches) != 4 {
+			return match
+		}
+
+		raw := ""
+		for i := 1; i <= 3; i++ {
+			if submatches[i] != "" {
+				raw = submatches[i]
+				break
+			}
+		}
+		raw = strings.TrimSpace(raw)
+		// пропускаем data: и абсолютные http/https — они будут обработаны как есть
+		if strings.HasPrefix(raw, "data:") {
+			return match
+		}
+
+		ref, err := url.Parse(raw)
+		if err != nil {
+			return match
+		}
+
+		abs := base.ResolveReference(ref)
+		if abs.Scheme != "http" && abs.Scheme != "https" {
+			return match
+		}
+
+		absStr := abs.String()
+		links = append(links, absStr)
+
+		targetLocal, err := p.storage.LocalPath(absStr)
+		if err != nil {
+			return match
+		}
+
+		rel, err := filepath.Rel(filepath.Dir(localPath), targetLocal)
+		if err != nil {
+			return match
+		}
+
+		relURL := filepath.ToSlash(rel)
+		return "url(" + relURL + ")"
+	})
+
+	return links, []byte(result), nil
 }
 

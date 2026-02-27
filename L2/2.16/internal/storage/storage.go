@@ -12,6 +12,13 @@ type LocalStorage struct {
 	Path string
 }
 
+// NewLocalStorage создаёт LocalStorage с заданной корневой директорией.
+func NewLocalStorage(root string) *LocalStorage {
+	return &LocalStorage{
+		Path: root,
+	}
+}
+
 // сохраняет body полученный по url, самостоятельно собирая путь
 // возвращает локальный путь сохраненного файла
 func (s *LocalStorage) Save(url string, body []byte) (string, error) {

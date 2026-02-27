@@ -12,7 +12,7 @@ import (
 
 // MaxBodyBytes ограничивает размер тела, которое мы читаем в память.
 // Увеличен, чтобы можно было скачивать реальные страницы и ресурсы.
-const MaxBodyBytes int64 = 20 * 1024 * 1024 // 20 MiB
+const MaxBodyBytes int64 = 64 * 1024 * 1024 // 20 MiB
 
 // Result содержит минимально необходимую информацию о HTTP-ответе.
 type Result struct {
@@ -99,4 +99,3 @@ func (f *Fetcher) Fetch(ctx context.Context, rawURL string) (*Result, error) {
 		Body:        body,
 	}, nil
 }
-
