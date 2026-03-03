@@ -1,7 +1,7 @@
-package handler
+package handlers
 
 import (
-	"net/http"
+	//"net/http"
 
 	"calendar/internal/usecases"
 )
@@ -13,5 +13,3 @@ type Handler struct {
 func NewHandler(c *usecases.Calendar) *Handler {
 	return &Handler{calendar: c}
 }
-
-func (h *Handler) CreateEvent(w http.ResponseWriter, r *http.Request)

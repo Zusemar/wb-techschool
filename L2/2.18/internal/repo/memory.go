@@ -6,30 +6,45 @@ import (
 )
 
 type memoryEventRepository struct {
-	events map[int]domain.Event // int - id события
+	events map[int]domain.Event
 	mutex  sync.RWMutex
-	nextID int
+}
+
+func NewMemoryRepository() EventRepository {
+	return &memoryEventRepository{
+		events: make(map[int]domain.Event),
+		mutex:  sync.RWMutex{},
+	}
 }
 
 func (m *memoryEventRepository) Create(event domain.Event) (int, error) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-
-	m.nextID++
-	event.ID = m.nextID
+	event.ID = len(m.events) + 1
 	m.events[event.ID] = event
-
 	return event.ID, nil
 }
 
-func (m *memoryEventRepository) GetByUser(user_id int) ([]domain.Event, error) {
+func (m *memoryEventRepository) Get(id int) (domain.Event, error) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
-	result := []domain.Event{}
-	for _, event := range m.events {
-		if event.UserID == user_id {
-			result = append(result, event)
+	event, ok := m.events[id]
+	if !ok {
+		return domain.Event{}, domain.ErrEventNotFound
+	}
+
+	return event, nil
+}
+
+func (m *memoryEventRepository) GetByUser(userID int) ([]domain.Event, error) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
+	var result []domain.Event
+	for _, e := range m.events {
+		if e.UserID == userID {
+			result = append(result, e)
 		}
 	}
 
@@ -58,10 +73,4 @@ func (m *memoryEventRepository) Delete(id int) error {
 
 	delete(m.events, id)
 	return nil
-}
-
-func NewMemoryRepository() *memoryEventRepository {
-	return &memoryEventRepository{
-		events: make(map[int]domain.Event),
-	}
 }
